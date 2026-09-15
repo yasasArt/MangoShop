@@ -1,0 +1,121 @@
+// Mango Shop — database schema
+// Run `npm run db:push` to create the tables, then `npm run db:seed`.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PACKED
+  DELIVERED
+  CANCELLED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  phone     String?
+  password  String
+  role      Role     @default(CUSTOMER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders Order[]
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String
+  imageUrl    String
+  createdAt   DateTime @default(now())
+
+  products Product[]
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String
+  /// Price per unit in LKR
+  price       Decimal  @db.Decimal(10, 2)
+  /// Optional crossed-out original price for "on sale" badges
+  comparePrice Decimal? @db.Decimal(10, 2)
+  /// kg, piece, box …
+  unit        String   @default("kg")
+  stock       Int      @default(0)
+  imageUrl    String
+  origin      String?
+  sweetness   Int      @default(4) // 1–5, shown as a little scale
+  featured    Boolean  @default(false)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  orderItems OrderItem[]
+
+  @@index([categoryId])
+}
+
+model Order {
+  id     String      @id @default(cuid())
+  /// Short human-friendly reference, e.g. MNG-4F2A9C
+  code   String      @unique
+  status OrderStatus @default(PENDING)
+
+  subtotal Decimal @db.Decimal(10, 2)
+  delivery Decimal @db.Decimal(10, 2) @default(0)
+  total    Decimal @db.Decimal(10, 2)
+
+  // Delivery details captured at checkout
+  fullName String
+  phone    String
+  address  String
+  city     String
+  note     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  items OrderItem[]
+
+  @@index([userId])
+}
+
+model OrderItem {
+  id       String  @id @default(cuid())
+  /// Snapshot of name + price so history survives product edits
+  name     String
+  price    Decimal @db.Decimal(10, 2)
+  unit     String  @default("kg")
+  quantity Int
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+}
