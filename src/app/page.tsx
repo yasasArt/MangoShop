@@ -81,12 +81,12 @@ export default async function HomePage() {
               >
                 Shop all mangoes
               </Link>
-              <Link
+              {/* <Link
                 href="/categories"
                 className="rounded-full bg-white px-7 py-3.5 text-sm font-semibold text-bark-800 ring-1 ring-bark-200 transition hover:ring-mango-400"
               >
                 Browse by category
-              </Link>
+              </Link> */}
             </div>
 
             <dl className="mt-10 flex flex-wrap gap-x-10 gap-y-4">
